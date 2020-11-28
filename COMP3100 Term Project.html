@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<!-- saved from url=(0045)https://www.cs.mun.ca/~rod/3100/project1.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>COMP3100 Term Project</title>
+<style type="text/css">
+table {
+    border-collapse : collapse;
+    border : thin solid black;
+}
+table td {
+    border : thin solid black;
+    padding : 4px;
+}
+table th {
+    border : thin solid black;
+    padding : 4px;
+}
+pre {
+    margin-left : auto;
+    margin-right : auto;
+    padding : 5px;
+    border : solid green 3px;
+    width : 80%;
+    background-color : rgb(255,255,220);
+}
+</style>
+</head>
+<body>
+
+<h1>CS3100 Project A and B</h1>
+
+<p>
+The 3100 project requires the development of a web application
+that stores <a href="https://en.wikipedia.org/wiki/Spreadsheet">spreadsheets</a>
+for users, these spreadsheets can be
+shared between users of the web site. 
+The project will be done in two parts, A and B.
+Part A will implement user account management for
+<a href="https://en.wikipedia.org/wiki/Authentication">authentication</a>
+and
+<a href="https://en.wikipedia.org/wiki/Authorization">authorization</a>
+and will provide mock-ups of the web pages for part B.
+Authentication identifies a user, normally with a password.
+Authorization determines what operations and access a particular user
+has on the web applications. In part A, there should be normal users
+and administrative users.
+The mock-ups will describe the features to be implemented in part B.
+</p>
+<p>
+   Some of the possible features of the web application include the following.
+   The web application should allow for the creation of a
+   spreadsheet with growable rows and columns.
+   Data can be entered into the cells of the spreadsheet.
+   The cells should be editable.
+   The spreadsheet should be able to perform simple row and column
+   <a href="https://en.wikipedia.org/wiki/Spreadsheet#Formulas">formulas</a>
+   (e.g., sum, min, max, avg ...).
+   The spreadsheet should be shareable to other users on the web site,
+   or it should be private. The shared spreadsheets should be copyable.
+   The web application should be able to draw simple
+   plots of the data in the spreadsheet.
+</p>
+<p>
+The general requirements for the project are:
+</p>
+
+<ul>
+<li>
+A web application includes the
+<a href="https://developer.mozilla.org/en-US/docs/Web/HTML">HTML</a>,
+<a href="https://developer.mozilla.org/en-US/docs/Web/CSS">CSS</a>,
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript">JavaScript</a>,
+media files, and any other files used by the browsers and server.
+</li>
+<li>
+The <a href="https://nodejs.org/en/">nodejs</a>
+and the <a href="https://expressjs.com/">express</a> framework must be used.
+Any node packages can be used except ones that implement the core features
+of a spreadsheet.
+The project should use <a href="https://www.npmjs.com/">npm</a>
+for building and testing. The <a href="https://yarnpkg.com/en/">Yarn</a>
+package manager can be used instead of npm.
+</li>
+<li>
+    CSS must be used to style the pages, the styling should be consistent
+    across all pages.
+</li>
+<li>
+    Communication with <a href="https://www.json.org/json-en.html">JSON</a>
+    must be used for some of the pages (features).
+</li>
+<li>
+    <a href="https://www.sqlite.org/index.html">Sqlite</a> must be used
+    as the database engine for any database access.
+    <b>No other database system is allowed.</b>
+</li>
+<li>
+<a href="https://www.webcomponents.org/">Web components</a>
+    should be used for part of the application.
+    The spreadsheet should be implemented with a web component.
+</li>
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API">
+Web sockets</a> can be used to implement client/server communication.
+</li>
+<li>
+<b>Part A must provide the following</b>:
+<ul>
+<li>
+user authentication (i.e., the system requires users to be registered and 
+they must sign-in to have access to the system),
+</li>
+<li>
+    attempting to access the web site without being logged in, should
+    redirect the user to the login/registration page,
+</li>
+<li>
+    a registration web page to allow a user to create an account,
+</li>
+<li>
+    a web page to allow a user to change account details (e.g., change the
+    account's password),
+</li>
+<li>
+    a set of administrative web pages that can modify and delete
+    user accounts (administrative web pages should only be accessible
+    by an administrator, this means that there is a normal role and
+    an administrative role),
+</li>
+<li>
+    data for user accounts must be stored in a Sqlite database.
+    The type of user account needs to be stored (e.g., user or admin).
+</li>
+<li>
+    <del>
+    mock up pages for the part B of the web application
+    with a brief
+    <a href="https://en.wikipedia.org/wiki/Use_case">use case flow description</a>.
+    </del>
+    Example mock ups include a list of spreadsheets belong to a user,
+    a sample spreadsheet, a list of spreadsheets that are shared.
+</li>
+</ul>
+</li>
+<li>
+<b>Part B must provide at least the following features/pages</b>:
+<ul>
+<li>a page the lists the shared spreadsheets,</li>
+<li>the administrative user will have access to all the spreadsheets,</li>
+<li>the shared spreadsheet should provide a button to copy a spreadsheet,</li>
+<li>a page that lists the spreadsheets belong to the user
+(both private and sharable),</li>
+<li>each spreadsheet should have a name, and whether it is sharable,</li>
+<li>the listing page should have a button/form to create a new spreadsheet,</li>
+<li>the listing page should be able to edit the name,
+delete the spreadsheet, and changes its sharing status,</li>
+<li>
+    a page to edit a spreadsheet, new rows and columns could
+    be added, rows or columns could be deleted, cells could
+    be editable,
+</li>
+<li>
+    a spreadsheet should be exported using <a href="https://en.wikipedia.org/wiki/Comma-separated_values">CSV</a> file,
+</li>
+<li>
+    a spreadsheet should be imported using CSV file,
+</li>
+<b>The following two requiements have been deleted</b>
+<del>
+<li>
+    any spreadsheet cell with a formula should be updated whenever
+    the matching rows or columns change,
+</li>
+<li>
+    the following formulas should be implemented:
+    <ul>
+        <li>abs(cell), absolute value for a cell</li>
+        <li>sqrt(cell), square root for a cell</li>
+        <li>pow(cell,constant), raise cell to a power of a constant</li>
+        <li>max(any part row) or max(any part column)</li>
+        <li>min(any part row) or min(any part column)</li>
+        <li>avg(any part row) or avg(any part column)</li>
+        <li>sum any part row or column with the same number of elements</li>
+    </ul>
+</li>
+</del>
+<li>
+   any changes to a spreadsheet should be saved on the server, and
+</li>
+<li>
+    at least three graphical reporting features (pie, line, bar graphs).
+</li>
+<li>
+   to achieve full marks extra features, decided by the student,
+   have to be added to the application
+   (e.g., admistrative features, graphical reports, ...).
+</li>
+</ul>
+</li>
+</ul>
+
+
+
+
+</body></html>

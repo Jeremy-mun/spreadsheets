@@ -1,0 +1,247 @@
+<script>
+    const requestParams = {
+         mode: 'cors',
+         credentials: 'same-origin',
+         headers : {
+             'Accept' : 'application/json',
+             'Content-Type' : 'application/json',
+         },
+    };
+
+    function makeSpreadSheet( n, m ) {
+        const sheet = document.createElement('div');
+        sheet.setAttribute('class', 'sheet');
+        for( let j = 0 ; j < m ; j++ ) {
+            const row = document.createElement('div');
+            row.setAttribute('class', 'row');
+            for( let i = 0; i < n; i++ ) {
+                const inp = document.createElement('input');
+                row.append( inp );
+            }
+            sheet.append( row );
+        }
+        return sheet;
+    }
+
+    function getSheetInputs( element ) {
+        const ssRow = Array.from(element.querySelectorAll('div.row'));
+        const sheet = ssRow.map( (r) => {
+            return Array.from(r.querySelectorAll('input'));
+        });
+        return sheet;
+    }
+
+    function getValues( sheetInputs ) {
+        return sheetInputs.map( (r) => r.map( (c) => c.value ));
+    }
+
+    function setValues( sheetInputs, values ) {
+        for( let i=0 ; i < sheetInputs.length; i++ ) {
+            const row = sheetInputs[i];
+            for( let j=0; j < row.length; j++ ) {
+                row[j].value = values[i][j]; 
+            }
+        }
+    }
+
+    function addRowSetValues( sheetInputs, values ) {
+        for( let i=0 ; i < sheetInputs.length - 1; i++ ) {
+            const row = sheetInputs[i];
+            for( let j=0; j < row.length; j++ ) {
+                row[j].value = values[i][j]; 
+            }
+        }
+    }
+
+    function addColSetValues( sheetInputs, values ) {
+        for( let i=0 ; i < sheetInputs.length; i++ ) {
+            const row = sheetInputs[i];
+            for( let j=0; j < row.length - 1; j++ ) {
+                row[j].value = values[i][j]; 
+            }
+        }
+    }
+</script>
+
+<h1>Edit {{sess.username}}'s Sheets</h1>
+
+<p>
+    Click a name to load that sheet for editing.
+</p>
+
+<ul id="list"> </ul>
+
+<h1>Spread Sheet edit view</h1>
+
+<p>You can add or remove rows and columns to your spread sheet and edit cell on this page.</p>
+
+<div>
+    <label> Name: <input id="sheetname" readonly> </label>
+    <button id="save">SAVE</button>
+    <button id="addrow">Add Row</button>
+    <button id="addcol">Add Column</button>
+    <button id="removerow">Remove Row</button>
+    <button id="removecol">Remove Column</button>
+</div>
+
+<div id="spread-sheet"></div>
+
+<script>
+    const listArea = document.querySelector('#list');
+    const sheetName = document.querySelector('#sheetname');
+    const sSheet = document.querySelector('#spread-sheet');
+    const saveButton = document.querySelector('#save');
+    const addRowButton = document.querySelector('#addrow');
+    const addColButton = document.querySelector('#addcol');
+    const removeRowButton = document.querySelector('#removerow');
+    const removeColButton = document.querySelector('#removecol');
+
+    async function loadNames( container ) {
+        const params = {...requestParams, method: 'GET' };
+        const resp = await fetch( '/edit-sheets', params );
+        const json = await resp.json();
+        container.innerHTML = '';
+        container.append( ...json.map( (x) => {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.textContent = x;
+            li.append( span );
+            return li;
+        }));
+        console.log( json );
+    }
+    loadNames( listArea );
+
+    listArea.addEventListener('click', async (evt) => {
+        const { target } = evt;
+        if ( target.nodeName === 'SPAN' ) {
+            const name = target.textContent;
+            const params = {...requestParams, method: 'GET' };
+            const resp = await fetch( `/available-sheet/${name}`, params );
+            const json = await resp.json();
+            console.log( json );
+            sheetname.value = target.textContent;
+            sheet = makeSpreadSheet( json[0].length, json.length );
+            if(sSheet.hasChildNodes()) {
+                sSheet.removeChild(sSheet.childNodes[0]);
+            }
+            sSheet.append( sheet );
+            const inputs = getSheetInputs( sheet );
+            setValues( inputs, json );
+        }
+    });
+
+    saveButton.addEventListener('click', async (evt) => {
+        const name = sheetName.value;
+        if ( name.trim().length === 0 ) return;
+        const inputs = getSheetInputs( sheet );
+        const values = JSON.stringify( getValues( inputs ) );
+        const params = {...requestParams, method: 'PUT', body: values };
+        const resp = await fetch( `/save-sheet/${name}`, params );
+        const json = await resp.json();
+        console.log( 'save', json );
+        if ( json.ok ) {
+            await loadNames( listArea );
+        }
+    });
+
+    addRowButton.addEventListener('click', async (evt) => {
+        const name = sheetName.value;
+        if ( name.trim().length === 0 ) return;
+        const params = {...requestParams, method: 'GET' };
+        const resp = await fetch( `/available-sheet/${name}`, params );
+        const json = await resp.json();
+        console.log( json );
+        sheet = makeSpreadSheet( json[0].length, json.length + 1);
+        if(sSheet.hasChildNodes()) {
+            sSheet.removeChild(sSheet.childNodes[0]);
+        }
+        sSheet.append( sheet );
+        const inputs = getSheetInputs( sheet );
+        addRowSetValues( inputs, json );
+        const inputs2 = getSheetInputs( sheet );
+        const values = JSON.stringify( getValues( inputs ) );
+        const params2 = {...requestParams, method: 'PUT', body: values };
+        const resp2 = await fetch( `/save-sheet/${name}`, params2 );
+        const json2 = await resp2.json();
+        console.log( 'save', json2 );
+        if ( json2.ok ) {
+            await loadNames( listArea );
+        }
+    });
+
+    addColButton.addEventListener('click', async (evt) => {
+        const name = sheetName.value;
+        if ( name.trim().length === 0 ) return;
+        const params = {...requestParams, method: 'GET' };
+        const resp = await fetch( `/available-sheet/${name}`, params );
+        const json = await resp.json();
+        console.log( json );
+        sheet = makeSpreadSheet( json[0].length + 1, json.length);
+        if(sSheet.hasChildNodes()) {
+            sSheet.removeChild(sSheet.childNodes[0]);
+        }
+        sSheet.append( sheet );
+        const inputs = getSheetInputs( sheet );
+        addColSetValues( inputs, json );
+        const inputs2 = getSheetInputs( sheet );
+        const values = JSON.stringify( getValues( inputs ) );
+        const params2 = {...requestParams, method: 'PUT', body: values };
+        const resp2 = await fetch( `/save-sheet/${name}`, params2 );
+        const json2 = await resp2.json();
+        console.log( 'save', json2 );
+        if ( json2.ok ) {
+            await loadNames( listArea );
+        }
+    });
+
+    removeRowButton.addEventListener('click', async (evt) => {
+        const name = sheetName.value;
+        if ( name.trim().length === 0 ) return;
+        const params = {...requestParams, method: 'GET' };
+        const resp = await fetch( `/available-sheet/${name}`, params );
+        const json = await resp.json();
+        console.log( json );
+        sheet = makeSpreadSheet( json[0].length, json.length - 1);
+        if(sSheet.hasChildNodes()) {
+            sSheet.removeChild(sSheet.childNodes[0]);
+        }
+        sSheet.append( sheet );
+        const inputs = getSheetInputs( sheet );
+        setValues( inputs, json );
+        const inputs2 = getSheetInputs( sheet );
+        const values = JSON.stringify( getValues( inputs ) );
+        const params2 = {...requestParams, method: 'PUT', body: values };
+        const resp2 = await fetch( `/save-sheet/${name}`, params2 );
+        const json2 = await resp2.json();
+        console.log( 'save', json2 );
+        if ( json2.ok ) {
+            await loadNames( listArea );
+        }
+    });
+
+    removeColButton.addEventListener('click', async (evt) => {
+        const name = sheetName.value;
+        if ( name.trim().length === 0 ) return;
+        const params = {...requestParams, method: 'GET' };
+        const resp = await fetch( `/available-sheet/${name}`, params );
+        const json = await resp.json();
+        console.log( json );
+        sheet = makeSpreadSheet( json[0].length - 1, json.length);
+        if(sSheet.hasChildNodes()) {
+            sSheet.removeChild(sSheet.childNodes[0]);
+        }
+        sSheet.append( sheet );
+        const inputs = getSheetInputs( sheet );
+        setValues( inputs, json );
+        const inputs2 = getSheetInputs( sheet );
+        const values = JSON.stringify( getValues( inputs ) );
+        const params2 = {...requestParams, method: 'PUT', body: values };
+        const resp2 = await fetch( `/save-sheet/${name}`, params2 );
+        const json2 = await resp2.json();
+        console.log( 'save', json2 );
+        if ( json2.ok ) {
+            await loadNames( listArea );
+        }
+    });
+</script>

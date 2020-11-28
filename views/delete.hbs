@@ -1,0 +1,10 @@
+{{#each users}}
+    <li>
+        username: {{username}}
+        <form method=post>
+            <input type=submit name="op" value="delete">
+            <input type=hidden name="user" value="{{id}}">
+        </form>
+    </li>
+{{/each}}
+<p> <a href="/admin">back</a>. </p>

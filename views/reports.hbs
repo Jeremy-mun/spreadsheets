@@ -1,0 +1,228 @@
+<script src="Chart.bundle.min.js"></script>
+<script>
+    const requestParams = {
+         mode: 'cors',
+         credentials: 'same-origin',
+         headers : {
+             'Accept' : 'application/json',
+             'Content-Type' : 'application/json',
+         },
+    };
+</script>
+<h1>Reports</h1>
+
+<p>
+    On this page you can turn your spread sheets into charts.
+</p>
+
+<ul id="list"> </ul>
+
+<p>
+    Select what type of chart you want your data to be represented in.
+</p>
+
+<div id="report-choice">
+    <button>line</button>
+    <button>bar</button>
+    <button>doughnut</button>
+    <button>pie</button>
+    <button>polarArea</button>
+    <button>scatter</button>
+    <input id="hidden" type="hidden">
+</div>
+<div id="plotting-box"></div>
+
+<script>
+    const listArea = document.querySelector('#list');
+    const reportChoice = document.querySelector('#report-choice');
+    const box = document.querySelector('#plotting-box');
+
+    let ctype = 'scatter';
+
+    makechart(ctype);
+
+    async function loadNames( container ) {
+        const params = {...requestParams, method: 'GET' };
+        const resp = await fetch( '/shared-sheets', params );
+        const json = await resp.json();
+        container.innerHTML = '';
+        container.append( ...json.map( (x) => {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.textContent = x;
+            li.append( span );
+            return li;
+        }));
+        console.log( json );
+    }
+    loadNames( listArea );
+
+    function makechart(ctype) {
+        box.innerHTML = '<canvas id="myplot"></canvas>';
+        ctx = document.getElementById('myplot').getContext('2d');
+        scatterChart = new Chart(ctx, {
+        type: ctype,
+        data: { datasets: [] },
+        options: {}
+        });
+    }
+
+    function setdata(values, ctype) {
+        switch (ctype) {
+            case 'line':
+                setline(values);
+                break;
+            case 'bar':
+                setbar(values);
+                break;
+            case 'doughnut', 'pie', 'polarArea':
+                setpolarpie(values);
+                break;
+            case 'scatter':
+                setscatter(values);
+                break;
+            default:
+        }
+    }
+
+    function setpolarpie(values){
+        const datasetNames = values.shift();
+        const indexName = datasetNames.shift();
+        const colours = ['red','green','blue','black','brown',];
+        let colourIndex = 0;
+        const datasets = [];
+        const label = [];
+        for( let i = 0; i < values.length; i++ ) {
+            label.push(values[i][0]);
+        }
+        for( let i = 0; i < datasetNames.length; i++ ) {
+            const data = [];
+            for( let row = 0; row < values.length; row++ ) {
+                data.push(values[row][i+1]);
+            }
+            const dataset = {
+                label: 'dataset',
+                data: data,
+                backgroundColor : colours,
+            }
+            datasets.push( dataset );
+            colourIndex = colourIndex >= colours.length ? 0 : colourIndex+1;
+        }
+        scatterChart.data.labels = label;
+        scatterChart.data.datasets = datasets;
+        scatterChart.update();
+    }
+
+    function setbar(values){
+        const datasetNames = values.shift();
+        const indexName = datasetNames.shift();
+        const colours = ['red','green','blue','black','brown',];
+        let colourIndex = 0;
+        const datasets = [];
+        const label = [];
+        for( let i = 0; i < values.length; i++ ) {
+            label.push(values[i][0]);
+        }
+        for( let i = 0; i < datasetNames.length; i++ ) {
+            const data = [];
+            for( let row = 0; row < values.length; row++ ) {
+                data.push(values[row][i+1]);
+            }
+            const dataset = {
+                label: datasetNames[i],
+                data: data,
+                backgroundColor : colours[colourIndex],
+                borderColor : colours[colourIndex],
+            }
+            datasets.push( dataset );
+            colourIndex = colourIndex >= colours.length ? 0 : colourIndex+1;
+        }
+        scatterChart.data.labels = label;
+        scatterChart.data.datasets = datasets;
+        scatterChart.update();
+    }
+
+    function setline(values){
+        const datasetNames = values.shift();
+        const indexName = datasetNames.shift();
+        const colours = ['red','green','blue','black','brown',];
+        let colourIndex = 0;
+        const datasets = [];
+        const label = [];
+        for( let i = 0; i < values.length; i++ ) {
+            label.push(values[i][0]);
+        }
+        for( let i = 0; i < datasetNames.length; i++ ) {
+            const data = [];
+            for( let row = 0; row < values.length; row++ ) {
+                data.push(values[row][i+1]);
+            }
+            const dataset = {
+                label: datasetNames[i],
+                data: data,
+                pointBackgroundColor : colours[colourIndex],
+                borderColor : colours[colourIndex],
+                fill : false,
+                showLine : true,
+            }
+            datasets.push( dataset );
+            colourIndex = colourIndex >= colours.length ? 0 : colourIndex+1;
+        }
+        scatterChart.data.labels = label;
+        scatterChart.data.datasets = datasets;
+        scatterChart.update();
+    }
+
+    function setscatter(values){
+        const datasetNames = values.shift();
+        const indexName = datasetNames.shift();
+        const colours = ['red','green','blue','black','brown',];
+        let colourIndex = 0;
+        const datasets = [];
+        for( let i = 0; i < datasetNames.length; i++ ) {
+            const pairs = [];
+            for( let row = 0; row < values.length; row++ ) {
+                pairs.push({ x: values[row][0], y:values[row][i+1] });
+            }
+            const dataset = {
+                label: datasetNames[i],
+                data: pairs,
+                pointBackgroundColor : colours[colourIndex],
+                borderColor : colours[colourIndex],
+                showLine : false,
+                fill: false,
+                lineTension : 0,
+            }
+            datasets.push( dataset );
+            colourIndex = colourIndex >= colours.length ? 0 : colourIndex+1;
+        }
+        scatterChart.data.datasets = datasets;
+        scatterChart.update();
+    }
+
+    async function getsheet(name){
+        const params = {...requestParams, method: 'GET' };
+        const resp = await fetch( `/available-sheet/${name}`, params );
+        const values = await resp.json();
+        console.log( values );
+        return values;
+    }
+
+listArea.addEventListener('click', async (evt) => {
+    const { target } = evt;
+    if ( target.nodeName !== 'SPAN' ) return;
+    makechart(ctype);
+    hidden.value = target.textContent;
+    const values = await getsheet(target.textContent);
+    setdata(values, ctype);
+});
+
+reportChoice.addEventListener('click', async (evt) => {
+    const { target } = evt;
+    if ( target.nodeName !== 'BUTTON' ) return;
+    ctype = target.textContent;
+    makechart(ctype);
+    const values = await getsheet(hidden.value);
+    setdata(values, ctype);
+});
+</script>

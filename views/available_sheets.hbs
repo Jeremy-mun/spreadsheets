@@ -1,0 +1,135 @@
+<script>
+    const requestParams = {
+         mode: 'cors',
+         credentials: 'same-origin',
+         headers : {
+             'Accept' : 'application/json',
+             'Content-Type' : 'application/json',
+         },
+    };
+
+    function makeSpreadSheet( n, m ) {
+        const sheet = document.createElement('div');
+        sheet.setAttribute('class', 'sheet');
+        for( let j = 0 ; j < m ; j++ ) {
+            const row = document.createElement('div');
+            row.setAttribute('class', 'row');
+            for( let i = 0; i < n; i++ ) {
+                const inp = document.createElement('input');
+                inp.setAttribute('readonly', 'true');
+                row.append( inp );
+            }
+            sheet.append( row );
+        }
+        return sheet;
+    }
+
+    function getSheetInputs( element ) {
+        const ssRow = Array.from(element.querySelectorAll('div.row'));
+        const sheet = ssRow.map( (r) => {
+            return Array.from(r.querySelectorAll('input'));
+        });
+        return sheet;
+    }
+
+    function getValues( sheetInputs ) {
+        return sheetInputs.map( (r) => r.map( (c) => c.value ));
+    }
+
+    function setValues( sheetInputs, values ) {
+        for( let i=0 ; i < sheetInputs.length; i++ ) {
+            const row = sheetInputs[i];
+            for( let j=0; j < row.length; j++ ) {
+                row[j].value = values[i][j]; 
+            }
+        }
+    }
+</script>
+
+<h1>Available Sheets</h1>
+
+<p>
+    Click a name to view the sheet.<br>
+    
+</p>
+
+<ul id="list"> </ul>
+
+<h1>Spread Sheet viewer</h1>
+
+<p>Enter a name and Click the copy button to copy the selected sheet into your spread sheets.</p>
+
+<div>
+    <label> Name: <input id="sheetname" readonly="true"> </label>
+    <label> CopyName: <input id="sheetcopyname"> </label>
+    <button id="copy">Copy</button>
+</div>
+
+<div id="spread-sheet"></div>
+
+<script>
+    const listArea = document.querySelector('#list');
+    const sSheet = document.querySelector('#spread-sheet');
+    const sheetCopyName = document.querySelector('#sheetcopyname');
+    const copyButton = document.querySelector('#copy');
+    const sheetname = document.querySelector('#sheetname');
+    
+    let sheet;
+
+    async function loadNames( container ) {
+        const params = {...requestParams, method: 'GET' };
+        const resp = await fetch( '/shared-sheets', params );
+        const json = await resp.json();
+        container.innerHTML = '';
+        container.append( ...json.map( (x) => {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.textContent = x;
+            li.append( span );
+            li.append(' ');
+            const button = document.createElement('button');
+            button.textContent = 'Export/Download';
+            button.setAttribute('onclick', `window.location.href = "/csv-export/${x}"`);
+            li.append(button);
+            return li;
+        }));
+        console.log( json );
+    }
+    loadNames( listArea );
+
+    listArea.addEventListener('click', async (evt) => {
+        const { target } = evt;
+        if ( target.nodeName === 'SPAN' ) {
+            const name = target.textContent;
+            const params = {...requestParams, method: 'GET' };
+            const resp = await fetch( `/available-sheet/${name}`, params );
+            const json = await resp.json();
+            console.log( json );
+            sheetname.value = target.textContent;
+            sheet = makeSpreadSheet( json[0].length, json.length );
+            if(sSheet.hasChildNodes()) {
+                sSheet.removeChild(sSheet.childNodes[0]);
+            }
+            sSheet.append( sheet );
+            const inputs = getSheetInputs( sheet );
+            setValues( inputs, json );
+        }
+    });
+
+    copyButton.addEventListener('click', async (evt) => {
+        const name = sheetCopyName.value;
+        if ( name.trim().length === 0 ) return;
+        const inputs = getSheetInputs(sheet);
+        const values = JSON.stringify( getValues( inputs ) );
+        const params = {...requestParams, method: 'PUT', body: values };
+        const resp = await fetch( `/copy-sheet/${name}`, params );
+        const json = await resp.json();
+        console.log( 'copy', json );
+        if ( json.ok ) {
+            await loadNames( listArea );
+        }
+        else {
+            console.log("name already taken");
+        }
+    });
+</script>

@@ -1,0 +1,232 @@
+<script>
+    const requestParams = {
+         mode: 'cors',
+         credentials: 'same-origin',
+         headers : {
+             'Accept' : 'application/json',
+             'Content-Type' : 'application/json',
+         },
+    };
+
+    function makeSpreadSheet( n, m ) {
+        const sheet = document.createElement('div');
+        sheet.setAttribute('class', 'sheet');
+        for( let j = 0 ; j < m ; j++ ) {
+            const row = document.createElement('div');
+            row.setAttribute('class', 'row');
+            for( let i = 0; i < n; i++ ) {
+                const inp = document.createElement('input');
+                inp.setAttribute('readonly', 'true');
+                row.append( inp );
+            }
+            sheet.append( row );
+        }
+        return sheet;
+    }
+
+    function getSheetInputs( element ) {
+        const ssRow = Array.from(element.querySelectorAll('div.row'));
+        const sheet = ssRow.map( (r) => {
+            return Array.from(r.querySelectorAll('input'));
+        });
+        return sheet;
+    }
+
+    function getValues( sheetInputs ) {
+        return sheetInputs.map( (r) => r.map( (c) => c.value ));
+    }
+
+    function setValues( sheetInputs, values ) {
+        for( let i=0 ; i < sheetInputs.length; i++ ) {
+            const row = sheetInputs[i];
+            for( let j=0; j < row.length; j++ ) {
+                row[j].value = values[i][j]; 
+            }
+        }
+    }
+</script>
+
+<h1>{{sess.username}}'s Sheets</h1>
+
+<p>
+    Click a name to load that sheet.
+</p>
+
+<ul id="list"> </ul>
+
+<h1>Spread Sheet viewer</h1>
+
+<p>Enter a name and Click the Create button to make a new spread sheet .</p>
+
+<div>
+    <label> Name: <input id="sheetname"> </label>
+    <button id="create">Create</button>
+    <button id="change">Change Name</button>
+    <label> Shareable <input id="shareable" type="checkbox" > </label>
+    <input type="hidden" id="hiddenname">
+</div>
+
+<div id="spread-sheet"></div>
+
+<h1>Import a spreadsheet from file using CSV</h1>
+
+<p>
+    A CSV file can be loaded into the database.
+</p>
+
+<div>
+<label> Name: <input id="import-file-name"> </label>
+<input type="file" id="csv-file-chooser">
+</div>
+
+<script>
+    const listArea = document.querySelector('#list');
+    const sSheet = document.querySelector('#spread-sheet');
+    const sheet = makeSpreadSheet( 4, 5 );
+    sSheet.append( sheet );
+    const createButton = document.querySelector('#create');
+    const changeButton = document.querySelector('#change');
+    const sheetName = document.querySelector('#sheetname');
+    const shareable = document.querySelector('#shareable');
+    const hiddenname = document.querySelector('#hiddenname');
+    const fileImportName = document.querySelector('#import-file-name');
+    const upLoad = document.querySelector('#csv-file-chooser');
+
+    async function loadNames( container ) {
+        const params = {...requestParams, method: 'GET' };
+        const resp = await fetch( '/user-sheets', params );
+        const json = await resp.json();
+        container.innerHTML = '';
+        container.append( ...json.map( (x) => {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.textContent = x;
+            li.append( span );
+            li.append(' ');
+            const button = document.createElement('button');
+            button.textContent = 'Export/Download';
+            button.setAttribute('onclick', `window.location.href = "/csv-export/${x}"`);
+            li.append(button);
+            li.append( ' ' );
+            const button2 = document.createElement('button');
+            button2.textContent = 'DELETE';
+            li.append( button2 );
+            return li;
+        }));
+        console.log( json );
+    }
+    loadNames( listArea );
+
+    async function importCSV( name, content ) {
+        const params = {
+            ...requestParams, method: 'PUT',
+            headers : {
+                'Accept' : 'application/json',
+                'Content-Type' : 'text/plain',
+            },
+            body: content,
+        };
+        const resp = await fetch( `/csv-import/${name}`, params );
+        const json = await resp.json();
+        return json;
+    }
+
+    listArea.addEventListener('click', async (evt) => {
+        const { target } = evt;
+        if ( target.nodeName === 'SPAN' ) {
+            const name = target.textContent;
+            const params = {...requestParams, method: 'GET' };
+            const resp = await fetch( `/sheet/${name}`, params );
+            const json = await resp.json();
+            console.log( json );
+            const data = JSON.parse(json.sheet);
+            console.log(data);
+            sheetName.value = target.textContent;
+            hiddenname.value = sheetName.value;
+            const sheet = makeSpreadSheet( data[0].length, data.length );
+            shareable.checked = json.shareable;
+            sSheet.removeChild(sSheet.childNodes[0]);
+            sSheet.append( sheet );
+            const inputs = getSheetInputs( sheet );
+            setValues( inputs, data );
+        }
+        else if ( target.nodeName === 'BUTTON' && target.textContent === 'DELETE' ) {
+            const name = target.parentNode.querySelector('span').textContent;
+            const params = {...requestParams, method: 'DELETE' };
+            const resp = await fetch( `/sheet/${name}`, params );
+            const json = await resp.json();
+            console.log( json );
+            if ( json.ok ) {
+                await loadNames( listArea );
+            }
+        }
+    });
+
+    createButton.addEventListener('click', async (evt) => {
+        hiddenname.value = sheetName.value;
+        const name = sheetName.value;
+        if ( name.trim().length === 0 ) return;
+        const inputs = getSheetInputs( sheet );
+        const values = getValues( inputs ) ;
+        const share = shareable.checked;
+        const data = {values: values, share: share};
+        const strdata = JSON.stringify(data);
+        const params = {...requestParams, method: 'PUT', body: strdata  };
+        const resp = await fetch( `/create-sheet/${name}`, params );
+        const json = await resp.json();
+        console.log( 'create', json );
+        if ( json.ok ) {
+            await loadNames( listArea );
+        }
+        else {
+            console.log("name already taken");
+        }
+    });
+
+    changeButton.addEventListener('click', async (evt) => {
+        const newname = sheetName.value;
+        if ( newname.trim().length === 0 ) return;
+        const oldname = hiddenname.value;
+        const params = {...requestParams, method: 'PUT'};
+        const resp = await fetch( `/change/${oldname}/${newname}`, params );
+        const json = await resp.json();
+        console.log('name changed', json);
+        if ( json.ok ) {
+            await loadNames( listArea );
+        }
+    });
+
+    shareable.addEventListener('change', async (evt) => {
+        const name = sheetName.value;
+        if ( name.trim().length === 0 ) return;
+        const share = shareable.checked;
+        const data = {shareable: share};
+        const strdata= JSON.stringify(data);
+        const params = {...requestParams, method: 'PUT', body: strdata };
+        const resp = await fetch( `/shareable-sheet/${name}`, params );
+        const json = await resp.json();
+        console.log( 'shareable', json );
+        if ( json.ok ) {
+            await loadNames( listArea );
+        }
+        else {
+            console.log('failed to update shareable status!');
+        }
+    });
+
+    upLoad.addEventListener( 'change', async (evt) => {
+        const name = fileImportName.value;
+        if ( name.trim().length === 0 ) return;
+        const { files } = upLoad;
+        const first = files[0];
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            console.log( reader.result );
+            const json = await importCSV( name, reader.result );
+            if ( json.ok ) {
+                await loadNames( listArea );
+            }
+        }; 
+        reader.readAsText( first );
+    });
+</script>

@@ -1,0 +1,24 @@
+<p>
+    Welcome to the account page {{sess.username}}.
+</p>
+<p> 
+    <a href="/change">Change Password</a>. 
+</p>
+{{#if sess.admin}}
+<p> 
+    <a href="/admin">Admin Page</a>. 
+</p>
+{{/if}}
+<p>
+    <a href="/available_sheets">Available Sheets</a>
+</p>
+<p>
+    <a href="/user_sheets">{{sess.username}}'s Sheets</a>
+</p>
+<p>
+    <a href="/edit_sheets">Edit {{sess.username}}'s Sheets</a>
+</p>
+<p>
+    <a href="/reports">Graphics Reports</a>
+</p>
+<p> <a href="/">Logout</a>. </p>

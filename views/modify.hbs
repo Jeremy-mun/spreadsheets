@@ -1,0 +1,13 @@
+{{#each users}}
+    <li>
+        <form method=post>
+            username: <input type=text name="username" size=16 value="{{username}}">
+            password: <input type=text name="pass" size=16 value="{{pass}}">
+            enabled: <input type=checkbox name="enabled" value="enabled" {{#if enabled}}checked{{/if}}>
+            admin: <input type=checkbox name="admin" value="admin" {{#if admin}}checked{{/if}}>
+            <input type=submit name="op" value="update">
+            <input type=hidden name="user" value="{{id}}">
+        </form>
+    </li>
+{{/each}}
+<p> <a href="/admin">back</a>. </p>
